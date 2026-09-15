@@ -67,7 +67,7 @@
             z-index: 10;
         }
 
-        /* Tela de Game Over estilizada */
+        /* Tela de Game Over */
         #telaGameOver {
             display: none;
             position: absolute;
@@ -119,7 +119,6 @@
         let particulasFogo = [];
         let teclasPressionadas = { a: false, s: false, j: false, k: false, l: false };
         
-        // Nova variável de vida (vai de 0 a 100, começa em 50 no meio)
         let vida = 50; 
         let geradorNotasInterval;
 
@@ -204,8 +203,6 @@
                     if (n.progresso >= 0.85 && n.progresso <= 0.98) {
                         pontos += 10;
                         combo++;
-                        
-                        // Acertou: ganha um pouco de vida (máximo 100)
                         vida = Math.min(100, vida + 4);
                         
                         document.getElementById("placar").innerText = "PONTOS: " + pontos;
@@ -218,7 +215,6 @@
             }
             if (!acertou) {
                 combo = 0;
-                // Errou a palhetada: perde vida!
                 vida = Math.max(0, vida - 5);
                 if (vida <= 0) dispararGameOver();
             }
@@ -271,19 +267,27 @@
                 ctx.stroke();
             }
 
-            // DESENHAR BARRA DE ENERGIA VERTICAL (Estilo Guitar Flash)
-            // Moldura Prata da Barra
+            // CORRIGIDO: Desenho da barra de energia consertado
             ctx.fillStyle = "#888";
             ctx.fillRect(590, 300, 25, 200);
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(590, 300, 25, 200);
-
-            // Fundo interno preto da barra
+            
             ctx.fillStyle = "#000";
             ctx.fillRect(593, 303, 19, 194);
 
-            // Preenchimento colorido dinâmico baseado na Vida atual do jogador
             let alturaVida = (vida / 100) * 194;
-            // Se a vida tiver alta fica verde, se tiver média amarela, se tiver baixa vermelha
             if (vida > 60) { ctx.fillStyle = "#00ff00"; }
+            else if (vida > 25) { ctx.fillStyle = "#ffff00"; }
+            else { ctx.fillStyle = "#ff0000"; }
+            
+            ctx.fillRect(593, 303 + (194 - alturaVida), 19, alturaVida);
+
+            // 2. Botões Alvo
+            botoesConfig.forEach(b => {
+                ctx.save();
+                ctx.scale(1, 0.5); 
+                ctx.beginPath();
+                ctx.arc(b.xBase, 530 / 0.5, 24, 0, Math.PI * 2);
+                ctx.fillStyle = teclasPressionadas[b.tecla] ? b.corAtiva : b.corNormal;
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 3;
