@@ -17,13 +17,13 @@
             font-family: Arial, sans-serif;
         }
         
-        /* Container centralizado com imagem de show de rock em alta definição */
+        /* Container centralizado com imagem segura de show de rock */
         #jogoContainer {
             position: relative;
             width: 800px;
             height: 600px;
             border: 4px solid #333;
-            background-image: url('https://unsplash.com'); /* Link de imagem pública ultra seguro */
+            background-image: url('https://unsplash.com');
             background-size: cover;
             background-position: center;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
@@ -91,9 +91,8 @@
     </div>
 
     <script>
-        const canvas = document.getElementById("telaJogo");
-        const ctx = canvas.getContext("2d");
-        
+        // Criamos as variáveis fora das funções para que todo o código consiga ler
+        let canvas, ctx;
         let jogando = false;
         let pontos = 0;
         let combo = 0;
@@ -111,6 +110,7 @@
 
         const yTopo = 250;
 
+        // FUNÇÃO DE INICIAR CORRIGIDA: Agora o botão consegue ler ela perfeitamente!
         function iniciarJogo() {
             if (!jogando) {
                 jogando = true;
@@ -129,20 +129,29 @@
             }
         }
 
-        // Capturar teclado
-        window.addEventListener("keydown", function(e) {
-            let t = e.key.toLowerCase();
-            if (teclasPressionadas.hasOwnProperty(t)) {
-                if (!jogando) { iniciarJogo(); return; }
-                if (!teclasPressionadas[t]) verificarAcerto(t);
-                teclasPressionadas[t] = true;
-            }
-        });
+        // Configuração inicial assim que a página abre
+        window.onload = function() {
+            canvas = document.getElementById("telaJogo");
+            ctx = canvas.getContext("2d");
 
-        window.addEventListener("keyup", function(e) {
-            let t = e.key.toLowerCase();
-            if (teclasPressionadas.hasOwnProperty(t)) teclasPressionadas[t] = false;
-        });
+            // Capturar teclado
+            window.addEventListener("keydown", function(e) {
+                let t = e.key.toLowerCase();
+                if (teclasPressionadas.hasOwnProperty(t)) {
+                    if (!jogando) { iniciarJogo(); return; }
+                    if (!teclasPressionadas[t]) verificarAcerto(t);
+                    teclasPressionadas[t] = true;
+                }
+            });
+
+            window.addEventListener("keyup", function(e) {
+                let t = e.key.toLowerCase();
+                if (teclasPressionadas.hasOwnProperty(t)) teclasPressionadas[t] = false;
+            });
+
+            // Inicia o desenho da tela
+            loopJogo();
+        };
 
         function verificarAcerto(teclaApertada) {
             let acertou = false;
@@ -179,15 +188,20 @@
         }
 
         function loopJogo() {
+            if (!ctx) {
+                requestAnimationFrame(loopJogo);
+                return;
+            }
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 1. Desenhar a Pista Inclinada Cinza do Guitar Flash (Formato Cone)
             ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
             ctx.beginPath();
-            ctx.moveTo(375, yTopo); // Topo esquerdo estreito
-            ctx.lineTo(425, yTopo); // Topo direito estreito
-            ctx.lineTo(560, 560);  // Base direita larga
-            ctx.lineTo(240, 560);  // Base esquerda larga
+            ctx.moveTo(375, yTopo); 
+            ctx.lineTo(425, yTopo); 
+            ctx.lineTo(560, 560);  
+            ctx.lineTo(240, 560);  
             ctx.closePath();
             ctx.fill();
 
@@ -214,7 +228,7 @@
             // 2. Desenhar os 5 Botões Alvo Achatados na Base
             botoesConfig.forEach(b => {
                 ctx.save();
-                ctx.scale(1, 0.5); // Achata o círculo em 3D
+                ctx.scale(1, 0.5); 
                 ctx.beginPath();
                 ctx.arc(b.xBase, 530 / 0.5, 24, 0, Math.PI * 2);
                 ctx.fillStyle = teclasPressionadas[b.tecla] ? b.corAtiva : b.corNormal;
@@ -231,7 +245,7 @@
                 ctx.restore();
             });
 
-            // 3. Desenhar Notas descendo em Perspectiva (Crescem conforme descem)
+            // 3. Desenhar Notas descendo em Perspectiva
             for (let i = 0; i < notas.length; i++) {
                 let n = notas[i];
                 if (jogando) n.progresso += n.velocidade;
@@ -269,11 +283,3 @@
                 p.y += p.vy;
                 p.vida--;
 
-                ctx.fillStyle = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"][Math.floor(Math.random() * 4)];
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(1, p.vida / 4), 0, Math.PI * 2);
-                ctx.fill();
-
-                if (p.vida <= 0) {
-                    particulasFogo.splice(i, 1);
-                    i--;
