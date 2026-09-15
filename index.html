@@ -22,11 +22,8 @@
             width: 800px;
             height: 600px;
             border: 4px solid #333;
-            background-image: url('https://unsplash.com');
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
             background-color: #111;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
 
         canvas { 
@@ -69,17 +66,45 @@
             text-shadow: 2px 2px 4px #000;
             z-index: 10;
         }
+
+        /* Tela de Game Over estilizada */
+        #telaGameOver {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(200, 0, 0, 0.85);
+            z-index: 20;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #telaGameOver h1 { font-size: 60px; color: #fff; margin-bottom: 10px; text-shadow: 3px 3px #000; }
+        #telaGameOver p { font-size: 24px; color: #eee; margin-bottom: 20px; }
+        #btnReiniciar { background-color: #fff; color: #900; border: none; padding: 12px 30px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        #btnReiniciar:hover { background-color: #eee; }
     </style>
 </head>
 <body>
 
     <div id="jogoContainer">
+        <!-- Informações superiores -->
         <div id="infoSuperior">
             <div id="musicaNome">Awake and Alive por Skillet</div>
             <div id="placar">PONTOS: 0</div>
         </div>
 
+        <!-- Botão clássico para começar -->
         <div id="textoInicio" onclick="iniciarJogo()">Aperte uma tecla<br>para começar</div>
+
+        <!-- Tela de Game Over -->
+        <div id="telaGameOver">
+            <h1>GAME OVER</h1>
+            <p id="pontosFinais">Você fez 0 pontos</p>
+            <button id="btnReiniciar" onclick="reiniciarJogo()">TENTAR DE NOVO</button>
+        </div>
 
         <canvas id="telaJogo" width="800" height="600"></canvas>
     </div>
@@ -87,11 +112,16 @@
     <script>
         let canvas, ctx;
         let jogando = false;
+        let gameOver = false;
         let pontos = 0;
         let combo = 0;
         let notas = [];
         let particulasFogo = [];
         let teclasPressionadas = { a: false, s: false, j: false, k: false, l: false };
+        
+        // Nova variável de vida (vai de 0 a 100, começa em 50 no meio)
+        let vida = 50; 
+        let geradorNotasInterval;
 
         const botoesConfig = [
             { tecla: "a", corNormal: "#005500", corAtiva: "#00ff00", xBase: 280 }, 
@@ -104,11 +134,12 @@
         const yTopo = 250;
 
         function iniciarJogo() {
-            if (!jogando) {
+            if (!jogando && !gameOver) {
                 jogando = true;
                 document.getElementById("textoInicio").style.display = "none";
                 
-                setInterval(function() {
+                geradorNotasInterval = setInterval(function() {
+                    if (!jogando) return;
                     let pistaRandom = Math.floor(Math.random() * 5);
                     notas.push({
                         pista: pistaRandom,
@@ -120,6 +151,27 @@
             }
         }
 
+        function dispararGameOver() {
+            jogando = false;
+            gameOver = true;
+            clearInterval(geradorNotasInterval);
+            document.getElementById("pontosFinais").innerText = "Você fez " + pontos + " pontos!";
+            document.getElementById("telaGameOver").style.display = "flex";
+        }
+
+        function reiniciarJogo() {
+            pontos = 0;
+            combo = 0;
+            vida = 50;
+            notas = [];
+            particulasFogo = [];
+            gameOver = false;
+            document.getElementById("placar").innerText = "PONTOS: 0";
+            document.getElementById("telaGameOver").style.display = "none";
+            jogando = true;
+            iniciarJogo();
+        }
+
         window.onload = function() {
             canvas = document.getElementById("telaJogo");
             ctx = canvas.getContext("2d");
@@ -127,6 +179,7 @@
             window.addEventListener("keydown", function(e) {
                 let t = e.key.toLowerCase();
                 if (teclasPressionadas.hasOwnProperty(t)) {
+                    if (gameOver) return;
                     if (!jogando) { iniciarJogo(); return; }
                     if (!teclasPressionadas[t]) verificarAcerto(t);
                     teclasPressionadas[t] = true;
@@ -151,6 +204,10 @@
                     if (n.progresso >= 0.85 && n.progresso <= 0.98) {
                         pontos += 10;
                         combo++;
+                        
+                        // Acertou: ganha um pouco de vida (máximo 100)
+                        vida = Math.min(100, vida + 4);
+                        
                         document.getElementById("placar").innerText = "PONTOS: " + pontos;
                         criarFogo(config.xBase, 530);
                         notas.splice(i, 1);
@@ -159,7 +216,12 @@
                     }
                 }
             }
-            if (!acertou) combo = 0;
+            if (!acertou) {
+                combo = 0;
+                // Errou a palhetada: perde vida!
+                vida = Math.max(0, vida - 5);
+                if (vida <= 0) dispararGameOver();
+            }
         }
 
         function criarFogo(x, y) {
@@ -184,7 +246,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 1. Pista Cone
-            ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
+            ctx.fillStyle = "rgba(20, 20, 20, 0.9)";
             ctx.beginPath();
             ctx.moveTo(375, yTopo); 
             ctx.lineTo(425, yTopo); 
@@ -209,76 +271,19 @@
                 ctx.stroke();
             }
 
-            // 2. Botões Alvo
-            botoesConfig.forEach(b => {
-                ctx.save();
-                ctx.scale(1, 0.5); 
-                ctx.beginPath();
-                ctx.arc(b.xBase, 530 / 0.5, 24, 0, Math.PI * 2);
-                ctx.fillStyle = teclasPressionadas[b.tecla] ? b.corAtiva : b.corNormal;
-                ctx.fill();
-                ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.arc(b.xBase, 530 / 0.5, 12, 0, Math.PI * 2);
-                ctx.fillStyle = "#000";
-                ctx.fill();
-                ctx.restore();
-            });
+            // DESENHAR BARRA DE ENERGIA VERTICAL (Estilo Guitar Flash)
+            // Moldura Prata da Barra
+            ctx.fillStyle = "#888";
+            ctx.fillRect(590, 300, 25, 200);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(590, 300, 25, 200);
 
-            // 3. Notas
-            for (let i = 0; i < notas.length; i++) {
-                let n = notas[i];
-                if (jogando) n.progresso += n.velocidade;
+            // Fundo interno preto da barra
+            ctx.fillStyle = "#000";
+            ctx.fillRect(593, 303, 19, 194);
 
-                let xPistaTopo = 375 + (n.pista * 10) + 5;
-                let xPistaBase = 240 + (n.pista * 64) + 32;
-                
-                let xAtual = xPistaTopo + (xPistaBase - xPistaTopo) * n.progresso;
-                let yAtual = yTopo + (530 - yTopo) * n.progresso;
-                
-                let tamanhoAtual = 4 + (16 * n.progresso);
-
-                ctx.save();
-                ctx.scale(1, 0.5);
-                ctx.beginPath();
-                ctx.arc(xAtual, yAtual / 0.5, tamanhoAtual, 0, Math.PI * 2);
-                ctx.fillStyle = n.cor;
-                ctx.fill();
-                ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-
-                if (n.progresso > 1.05) {
-                    combo = 0;
-                    notas.splice(i, 1);
-                    i--;
-                }
-            }
-
-            // 4. Fogo
-            for (let i = 0; i < particulasFogo.length; i++) {
-                let p = particulasFogo[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vida--;
-
-                ctx.fillStyle = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"][Math.floor(Math.random() * 4)];
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(1, p.vida / 4), 0, Math.PI * 2);
-                ctx.fill();
-
-                if (p.vida <= 0) {
-                    particulasFogo.splice(i, 1);
-                    i--;
-                }
-            }
-
-            requestAnimationFrame(loopJogo);
-        }
-    </script>
-</body>
-</html>
+            // Preenchimento colorido dinâmico baseado na Vida atual do jogador
+            let alturaVida = (vida / 100) * 194;
+            // Se a vida tiver alta fica verde, se tiver média amarela, se tiver baixa vermelha
+            if (vida > 60) { ctx.fillStyle = "#00ff00"; }
