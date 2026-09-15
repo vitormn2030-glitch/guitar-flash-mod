@@ -17,7 +17,7 @@
             font-family: Arial, sans-serif;
         }
         
-        /* Container centralizado com imagem segura de show de rock */
+        /* Container centralizado com fundo escuro e imagem garantida de show */
         #jogoContainer {
             position: relative;
             width: 800px;
@@ -77,7 +77,7 @@
 <body>
 
     <div id="jogoContainer">
-        <!-- Informações superiores idênticas -->
+        <!-- Informações superiores -->
         <div id="infoSuperior">
             <div id="musicaNome">Awake and Alive por Skillet</div>
             <div id="placar">PONTOS: 0</div>
@@ -91,8 +91,10 @@
     </div>
 
     <script>
-        // Criamos as variáveis fora das funções para que todo o código consiga ler
-        let canvas, ctx;
+        // Criamos as variáveis fora das funções para estarem sempre disponíveis
+        let canvas = document.getElementById("telaJogo");
+        let ctx = canvas.getContext("2d");
+        
         let jogando = false;
         let pontos = 0;
         let combo = 0;
@@ -110,13 +112,13 @@
 
         const yTopo = 250;
 
-        // FUNÇÃO DE INICIAR CORRIGIDA: Agora o botão consegue ler ela perfeitamente!
+        // FUNÇÃO DE INICIAR LIVRE: O botão agora consegue acionar de primeira!
         function iniciarJogo() {
             if (!jogando) {
                 jogando = true;
                 document.getElementById("textoInicio").style.display = "none";
                 
-                // Solta as notas coloridas de forma constante
+                // Começa a gerar as notas na esteira
                 setInterval(function() {
                     let pistaRandom = Math.floor(Math.random() * 5);
                     notas.push({
@@ -129,29 +131,20 @@
             }
         }
 
-        // Configuração inicial assim que a página abre
-        window.onload = function() {
-            canvas = document.getElementById("telaJogo");
-            ctx = canvas.getContext("2d");
+        // Configuração dos controles de teclado
+        window.addEventListener("keydown", function(e) {
+            let t = e.key.toLowerCase();
+            if (teclasPressionadas.hasOwnProperty(t)) {
+                if (!jogando) { iniciarJogo(); return; }
+                if (!teclasPressionadas[t]) verificarAcerto(t);
+                teclasPressionadas[t] = true;
+            }
+        });
 
-            // Capturar teclado
-            window.addEventListener("keydown", function(e) {
-                let t = e.key.toLowerCase();
-                if (teclasPressionadas.hasOwnProperty(t)) {
-                    if (!jogando) { iniciarJogo(); return; }
-                    if (!teclasPressionadas[t]) verificarAcerto(t);
-                    teclasPressionadas[t] = true;
-                }
-            });
-
-            window.addEventListener("keyup", function(e) {
-                let t = e.key.toLowerCase();
-                if (teclasPressionadas.hasOwnProperty(t)) teclasPressionadas[t] = false;
-            });
-
-            // Inicia o desenho da tela
-            loopJogo();
-        };
+        window.addEventListener("keyup", function(e) {
+            let t = e.key.toLowerCase();
+            if (teclasPressionadas.hasOwnProperty(t)) teclasPressionadas[t] = false;
+        });
 
         function verificarAcerto(teclaApertada) {
             let acertou = false;
@@ -188,14 +181,9 @@
         }
 
         function loopJogo() {
-            if (!ctx) {
-                requestAnimationFrame(loopJogo);
-                return;
-            }
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Desenhar a Pista Inclinada Cinza do Guitar Flash (Formato Cone)
+            // 1. Desenhar a Pista Inclinada Cinza (Formato Cone de Perspectiva)
             ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
             ctx.beginPath();
             ctx.moveTo(375, yTopo); 
@@ -237,7 +225,6 @@
                 ctx.lineWidth = 3;
                 ctx.stroke();
                 
-                // Centro preto do botão
                 ctx.beginPath();
                 ctx.arc(b.xBase, 530 / 0.5, 12, 0, Math.PI * 2);
                 ctx.fillStyle = "#000";
@@ -245,7 +232,7 @@
                 ctx.restore();
             });
 
-            // 3. Desenhar Notas descendo em Perspectiva
+            // 3. Desenhar Notas descendo e crescendo em perspectiva
             for (let i = 0; i < notas.length; i++) {
                 let n = notas[i];
                 if (jogando) n.progresso += n.velocidade;
@@ -276,10 +263,21 @@
                 }
             }
 
-            // 4. Efeitos do fogo de acerto
+            // 4. Efeitos das labaredas de fogo
             for (let i = 0; i < particulasFogo.length; i++) {
                 let p = particulasFogo[i];
                 p.x += p.vx;
                 p.y += p.vy;
                 p.vida--;
+
+                ctx.fillStyle = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"][Math.floor(Math.random() * 4)];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, Math.max(1, p.vida / 4), 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.vida <= 0) {
+                    particulasFogo.splice(i, 1);
+                    i--;
+                }
+            }
 
