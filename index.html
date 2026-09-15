@@ -17,30 +17,31 @@
             font-family: Arial, sans-serif;
         }
         
-        /* Container centralizado com o fundo da banda Skillet */
+        /* Container centralizado com imagem de show de rock em alta definição */
         #jogoContainer {
             position: relative;
             width: 800px;
             height: 600px;
             border: 4px solid #333;
-            background-image: url('https://alphacoders.com'); /* Foto clássica do Skillet */
+            background-image: url('https://unsplash.com'); /* Link de imagem pública ultra seguro */
             background-size: cover;
             background-position: center;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            background-color: #111;
         }
 
         canvas { 
             position: absolute;
             top: 0;
             left: 0;
-            background-color: transparent; /* Pista fica por cima da imagem */
+            background-color: transparent; 
             z-index: 5;
         }
 
         /* Texto Clássico de Início */
         #textoInicio {
             position: absolute;
-            top: 40%;
+            top: 45%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: linear-gradient(180deg, #444, #111);
@@ -54,24 +55,23 @@
             z-index: 10;
             cursor: pointer;
             text-align: center;
+            user-select: none;
         }
 
         /* Painel Superior do Guitar Flash */
         #infoSuperior {
             position: absolute;
-            top: 10px;
+            top: 15px;
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 30px;
             box-sizing: border-box;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-shadow: 2px 2px 4px #000;
             z-index: 10;
         }
-        #musicaNome { color: #fff; }
-        #placar { color: #fff; }
     </style>
 </head>
 <body>
@@ -83,10 +83,10 @@
             <div id="placar">PONTOS: 0</div>
         </div>
 
-        <!-- Pop-up idêntico para iniciar -->
+        <!-- Botão clássico para começar -->
         <div id="textoInicio" onclick="iniciarJogo()">Aperte uma tecla<br>para começar</div>
 
-        <!-- Tela do jogo com transparência para ver a banda de fundo -->
+        <!-- Tela do jogo com transparência -->
         <canvas id="telaJogo" width="800" height="600"></canvas>
     </div>
 
@@ -101,18 +101,14 @@
         let particulasFogo = [];
         let teclasPressionadas = { a: false, s: false, j: false, k: false, l: false };
 
-        // Configurações das 5 pistas e botões com perspectiva 3D
-        // Cada botão tem sua posição na base (Y: 530)
         const botoesConfig = [
-            { tecla: "a", corNormal: "#005500", corAtiva: "#00ff00", xBase: 250 }, // Verde
-            { tecla: "s", corNormal: "#550000", corAtiva: "#ff0000", xBase: 325 }, // Vermelho
+            { tecla: "a", corNormal: "#005500", corAtiva: "#00ff00", xBase: 280 }, // Verde
+            { tecla: "s", corNormal: "#550000", corAtiva: "#ff0000", xBase: 340 }, // Vermelho
             { tecla: "j", corNormal: "#555500", corAtiva: "#ffff00", xBase: 400 }, // Amarelo
-            { tecla: "k", corNormal: "#000055", corAtiva: "#0000ff", xBase: 475 }, // Azul
-            { tecla: "l", corNormal: "#552200", corAtiva: "#ff6600", xBase: 550 }  // Laranja
+            { tecla: "k", corNormal: "#000055", corAtiva: "#0000ff", xBase: 460 }, // Azul
+            { tecla: "l", corNormal: "#552200", corAtiva: "#ff6600", xBase: 520 }  // Laranja
         ];
 
-        // Centro do topo de onde as notas brotam (Ponto de Fuga do 3D)
-        const xTopoCentro = 400;
         const yTopo = 250;
 
         function iniciarJogo() {
@@ -125,8 +121,8 @@
                     let pistaRandom = Math.floor(Math.random() * 5);
                     notas.push({
                         pista: pistaRandom,
-                        progresso: 0, // Vai de 0 (topo) até 1 (base dos botões)
-                        velocidade: 0.015, // Velocidade de descida suave
+                        progresso: 0, 
+                        velocidade: 0.015, 
                         cor: botoesConfig[pistaRandom].corAtiva
                     });
                 }, 700);
@@ -155,8 +151,7 @@
                 let config = botoesConfig[n.pista];
                 
                 if (config.tecla === teclaApertada) {
-                    // Zona de acerto na perspectiva (progresso entre 0.88 e 0.98)
-                    if (n.progresso >= 0.88 && n.progresso <= 0.98) {
+                    if (n.progresso >= 0.85 && n.progresso <= 0.98) {
                         pontos += 10;
                         combo++;
                         document.getElementById("placar").innerText = "PONTOS: " + pontos;
@@ -174,7 +169,7 @@
             const cores = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"];
             for (let i = 0; i < 15; i++) {
                 particulasFogo.push({
-                    x: x + (Math.random() - 0.5) * 30,
+                    x: x + (Math.random() - 0.5) * 20,
                     y: y,
                     vy: -Math.random() * 5 - 3,
                     vx: (Math.random() - 0.5) * 2,
@@ -183,85 +178,102 @@
             }
         }
 
-        // Desenho Principal com efeito de perspectiva 3D
         function loopJogo() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Desenhar a Esteira/Pista 3D Cinza Escuro
-            ctx.fillStyle = "rgba(25, 25, 25, 0.85)";
+            // 1. Desenhar a Pista Inclinada Cinza do Guitar Flash (Formato Cone)
+            ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
             ctx.beginPath();
-            ctx.moveTo(370, yTopo); // Topo esquerdo estreito
-            ctx.lineTo(430, yTopo); // Topo direito estreito
-            ctx.lineTo(600, 570);  // Base direita larga
-            ctx.lineTo(200, 570);  // Base esquerda larga
+            ctx.moveTo(375, yTopo); // Topo esquerdo estreito
+            ctx.lineTo(425, yTopo); // Topo direito estreito
+            ctx.lineTo(560, 560);  // Base direita larga
+            ctx.lineTo(240, 560);  // Base esquerda larga
             ctx.closePath();
             ctx.fill();
 
-            // Bordas laterais brilhantes da pista
-            ctx.strokeStyle = "#fff";
+            // Linhas laterais brancas da pista
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(370, yTopo); ctx.lineTo(200, 570);
-            ctx.moveTo(430, yTopo); ctx.lineTo(600, 570);
+            ctx.moveTo(375, yTopo); ctx.lineTo(240, 560);
+            ctx.moveTo(425, yTopo); ctx.lineTo(560, 560);
             ctx.stroke();
 
-            // Linhas divisórias das cordas na perspectiva 3D
-            ctx.strokeStyle = "rgba(85, 85, 85, 0.5)";
+            // Linhas divisórias das cordas internas
+            ctx.strokeStyle = "rgba(100, 100, 100, 0.4)";
             ctx.lineWidth = 2;
             for (let i = 1; i < 5; i++) {
-                let xTopoL = 370 + (i * 12);
-                let xBaseL = 200 + (i * 80);
+                let xTopoL = 375 + (i * 10);
+                let xBaseL = 240 + (i * 64);
                 ctx.beginPath();
                 ctx.moveTo(xTopoL, yTopo);
-                ctx.lineTo(xBaseL, 570);
+                ctx.lineTo(xBaseL, 560);
                 ctx.stroke();
             }
 
-            // 2. Desenhar os 5 Botões Alvo na Base (Estilo Guitar Flash)
+            // 2. Desenhar os 5 Botões Alvo Achatados na Base
             botoesConfig.forEach(b => {
                 ctx.save();
-                // Desenha o aro branco externo 3D achatado
-                ctx.scale(1, 0.4); // Achata o círculo para dar sensação de ângulo deitada
+                ctx.scale(1, 0.5); // Achata o círculo em 3D
                 ctx.beginPath();
-                ctx.arc(b.xBase, 530 / 0.4, 28, 0, Math.PI * 2);
+                ctx.arc(b.xBase, 530 / 0.5, 24, 0, Math.PI * 2);
                 ctx.fillStyle = teclasPressionadas[b.tecla] ? b.corAtiva : b.corNormal;
                 ctx.fill();
                 ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 3;
                 ctx.stroke();
                 
-                // Centro preto do botão igual ao original
+                // Centro preto do botão
                 ctx.beginPath();
-                ctx.arc(b.xBase, 530 / 0.4, 14, 0, Math.PI * 2);
+                ctx.arc(b.xBase, 530 / 0.5, 12, 0, Math.PI * 2);
                 ctx.fillStyle = "#000";
                 ctx.fill();
                 ctx.restore();
             });
 
-            // 3. Mover e Desenhar Notas com crescimento em Perspectiva
+            // 3. Desenhar Notas descendo em Perspectiva (Crescem conforme descem)
             for (let i = 0; i < notas.length; i++) {
                 let n = notas[i];
                 if (jogando) n.progresso += n.velocidade;
 
-                // Fórmulas de Perspectiva 3D: calculam a posição X e Y reais com base no progresso
-                let xPistaTopo = 370 + (n.pista * 12) + 6;
-                let xPistaBase = 200 + (n.pista * 80) + 40;
+                let xPistaTopo = 375 + (n.pista * 10) + 5;
+                let xPistaBase = 240 + (n.pista * 64) + 32;
                 
                 let xAtual = xPistaTopo + (xPistaBase - xPistaTopo) * n.progresso;
                 let yAtual = yTopo + (530 - yTopo) * n.progresso;
                 
-                // A nota começa pequena (tamanho 4) e chega grande na base (tamanho 22)
-                let tamanhoAtual = 4 + (18 * n.progresso);
+                let tamanhoAtual = 4 + (16 * n.progresso);
 
-                // Desenha a nota oval deitada em 3D
                 ctx.save();
-                ctx.scale(1, 0.45);
+                ctx.scale(1, 0.5);
                 ctx.beginPath();
-                ctx.arc(xAtual, yAtual / 0.45, tamanhoAtual, 0, Math.PI * 2);
+                ctx.arc(xAtual, yAtual / 0.5, tamanhoAtual, 0, Math.PI * 2);
                 ctx.fillStyle = n.cor;
                 ctx.fill();
                 ctx.strokeStyle = "#fff";
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.stroke();
                 ctx.restore();
 
+                if (n.progresso > 1.05) {
+                    combo = 0;
+                    notas.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // 4. Efeitos do fogo de acerto
+            for (let i = 0; i < particulasFogo.length; i++) {
+                let p = particulasFogo[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vida--;
+
+                ctx.fillStyle = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"][Math.floor(Math.random() * 4)];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, Math.max(1, p.vida / 4), 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.vida <= 0) {
+                    particulasFogo.splice(i, 1);
+                    i--;
