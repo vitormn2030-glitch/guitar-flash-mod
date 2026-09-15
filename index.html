@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Guitar Flash - Mod Fiel 🔥</title>
+    <style>
+        body { 
+            background-color: #000; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            flex-direction: column; 
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #jogoContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 4px solid #333;
+            background-image: url('https://unsplash.com');
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            background-color: #111;
+        }
+
+        canvas { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: transparent; 
+            z-index: 5;
+        }
+
+        #textoInicio {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(180deg, #444, #111);
+            border: 2px solid #666;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #ddd;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 10;
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+        }
+
+        #infoSuperior {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="jogoContainer">
+        <div id="infoSuperior">
+            <div id="musicaNome">Awake and Alive por Skillet</div>
+            <div id="placar">PONTOS: 0</div>
+        </div>
+
+        <div id="textoInicio" onclick="iniciarJogo()">Aperte uma tecla<br>para começar</div>
+
+        <canvas id="telaJogo" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        let canvas, ctx;
+        let jogando = false;
+        let pontos = 0;
+        let combo = 0;
+        let notas = [];
+        let particulasFogo = [];
+        let teclasPressionadas = { a: false, s: false, j: false, k: false, l: false };
+
+        const botoesConfig = [
+            { tecla: "a", corNormal: "#005500", corAtiva: "#00ff00", xBase: 280 }, 
+            { tecla: "s", corNormal: "#550000", corAtiva: "#ff0000", xBase: 340 }, 
+            { tecla: "j", corNormal: "#555500", corAtiva: "#ffff00", xBase: 400 }, 
+            { tecla: "k", corNormal: "#000055", corAtiva: "#0000ff", xBase: 460 }, 
+            { tecla: "l", corNormal: "#552200", corAtiva: "#ff6600", xBase: 520 }  
+        ];
+
+        const yTopo = 250;
+
+        function iniciarJogo() {
+            if (!jogando) {
+                jogando = true;
+                document.getElementById("textoInicio").style.display = "none";
+                
+                setInterval(function() {
+                    let pistaRandom = Math.floor(Math.random() * 5);
+                    notas.push({
+                        pista: pistaRandom,
+                        progresso: 0, 
+                        velocidade: 0.015, 
+                        cor: botoesConfig[pistaRandom].corAtiva
+                    });
+                }, 700);
+            }
+        }
+
+        window.onload = function() {
+            canvas = document.getElementById("telaJogo");
+            ctx = canvas.getContext("2d");
+
+            window.addEventListener("keydown", function(e) {
+                let t = e.key.toLowerCase();
+                if (teclasPressionadas.hasOwnProperty(t)) {
+                    if (!jogando) { iniciarJogo(); return; }
+                    if (!teclasPressionadas[t]) verificarAcerto(t);
+                    teclasPressionadas[t] = true;
+                }
+            });
+
+            window.addEventListener("keyup", function(e) {
+                let t = e.key.toLowerCase();
+                if (teclasPressionadas.hasOwnProperty(t)) teclasPressionadas[t] = false;
+            });
+
+            loopJogo();
+        };
+
+        function verificarAcerto(teclaApertada) {
+            let acertou = false;
+            for (let i = 0; i < notas.length; i++) {
+                let n = notas[i];
+                let config = botoesConfig[n.pista];
+                
+                if (config.tecla === teclaApertada) {
+                    if (n.progresso >= 0.85 && n.progresso <= 0.98) {
+                        pontos += 10;
+                        combo++;
+                        document.getElementById("placar").innerText = "PONTOS: " + pontos;
+                        criarFogo(config.xBase, 530);
+                        notas.splice(i, 1);
+                        acertou = true;
+                        break;
+                    }
+                }
+            }
+            if (!acertou) combo = 0;
+        }
+
+        function criarFogo(x, y) {
+            const cores = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"];
+            for (let i = 0; i < 15; i++) {
+                particulasFogo.push({
+                    x: x + (Math.random() - 0.5) * 20,
+                    y: y,
+                    vy: -Math.random() * 5 - 3,
+                    vx: (Math.random() - 0.5) * 2,
+                    vida: Math.random() * 15 + 10
+                });
+            }
+        }
+
+        function loopJogo() {
+            if (!ctx) {
+                requestAnimationFrame(loopJogo);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Pista Cone
+            ctx.fillStyle = "rgba(20, 20, 20, 0.85)";
+            ctx.beginPath();
+            ctx.moveTo(375, yTopo); 
+            ctx.lineTo(425, yTopo); 
+            ctx.lineTo(560, 560);  
+            ctx.lineTo(240, 560);  
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(375, yTopo); ctx.lineTo(240, 560);
+            ctx.moveTo(425, yTopo); ctx.lineTo(560, 560);
+            ctx.stroke();
+
+            for (let i = 1; i < 5; i++) {
+                let xTopoL = 375 + (i * 10);
+                let xBaseL = 240 + (i * 64);
+                ctx.beginPath();
+                ctx.moveTo(xTopoL, yTopo);
+                ctx.lineTo(xBaseL, 560);
+                ctx.stroke();
+            }
+
+            // 2. Botões Alvo
+            botoesConfig.forEach(b => {
+                ctx.save();
+                ctx.scale(1, 0.5); 
+                ctx.beginPath();
+                ctx.arc(b.xBase, 530 / 0.5, 24, 0, Math.PI * 2);
+                ctx.fillStyle = teclasPressionadas[b.tecla] ? b.corAtiva : b.corNormal;
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(b.xBase, 530 / 0.5, 12, 0, Math.PI * 2);
+                ctx.fillStyle = "#000";
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 3. Notas
+            for (let i = 0; i < notas.length; i++) {
+                let n = notas[i];
+                if (jogando) n.progresso += n.velocidade;
+
+                let xPistaTopo = 375 + (n.pista * 10) + 5;
+                let xPistaBase = 240 + (n.pista * 64) + 32;
+                
+                let xAtual = xPistaTopo + (xPistaBase - xPistaTopo) * n.progresso;
+                let yAtual = yTopo + (530 - yTopo) * n.progresso;
+                
+                let tamanhoAtual = 4 + (16 * n.progresso);
+
+                ctx.save();
+                ctx.scale(1, 0.5);
+                ctx.beginPath();
+                ctx.arc(xAtual, yAtual / 0.5, tamanhoAtual, 0, Math.PI * 2);
+                ctx.fillStyle = n.cor;
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+
+                if (n.progresso > 1.05) {
+                    combo = 0;
+                    notas.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // 4. Fogo
+            for (let i = 0; i < particulasFogo.length; i++) {
+                let p = particulasFogo[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vida--;
+
+                ctx.fillStyle = ["#ff3300", "#ffaa00", "#ffff00", "#ffffff"][Math.floor(Math.random() * 4)];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, Math.max(1, p.vida / 4), 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.vida <= 0) {
+                    particulasFogo.splice(i, 1);
+                    i--;
+                }
+            }
+
+            requestAnimationFrame(loopJogo);
+        }
+    </script>
+</body>
+</html>
