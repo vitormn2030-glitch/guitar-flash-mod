@@ -1,1 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Guitar Flash Mod - Modo Clipe Oficial 🔥</title>
+    <style>
+        body { background-color: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column; overflow: hidden; }
+        #painel { display: flex; justify-content: space-between; width: 500px; font-family: Arial, sans-serif; font-size: 22px; font-weight: bold; margin-bottom: 10px; z-index: 10; }
+        #placar { color: #00ff00; }
+        #combo { color: #ffff00; }
+        #multiplicador { color: #00ffff; }
+        
+        #containerJogo { position: relative; width: 500px; height: 600px; }
+        canvas { position: absolute; top: 0; left: 0; border: 4px solid #444; background-color: transparent; z-index: 5; }
+        #videoBackground { position: absolute; top: 4px; left: 4px; width: 492px; height: 592px; z-index: 1; }
+        
+        #btnIniciar { background-color: #ff8800; color: white; border: none; padding: 15px 30px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; font-family: Arial, sans-serif; z-index: 10; }
+        #btnIniciar:hover { background-color: #ffaa00; }
+    </style>
+</head>
+<body>
+
+    <div id="painel">
+        <div id="placar">PONTOS: 0</div>
+        <div id="combo">COMBO: 0</div>
+        <div id="multiplicador">MULT: x1</div>
+    </div>
+
+    <div id="containerJogo">
+        <!-- Vídeo do YouTube oficial rodando ao fundo -->
+        <iframe id="videoBackground" src="https://youtube.com" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <canvas id="telaJogo" width="500" height="600"></canvas>
+    </div>
+
+    <button id="btnIniciar" onclick="comecarGameplay()">COMEÇAR A JOGAR</button>
+
+    <script>
+        const canvas = document.getElementById("telaJogo");
+        const ctx = canvas.getContext("2d");
+        
+        const botoesConfig = [
+            { x: 70,  corNormal: "#008800", corAtiva: "#00ff00", tecla: "a" },
+            { x: 150, corNormal: "#880000", corAtiva: "#ff0000", tecla: "s" },
+            { x: 230, corNormal: "#888800", corAtiva: "#ffff00", tecla: "j" },
+            { x: 310, corNormal: "#000088", corAtiva: "#0000ff", tecla: "k" },
+            { x: 390, corNormal: "#884400", corAtiva: "#ff8800", tecla: "l" }
+        ];
+
+        let teclasPressionadas = { a: false, s: false, j: false, k: false, l: false };
+        let notas = [];
+        let particulasFogo = [];
+        let pontos = 0;
+        let comboAtual = 0;
+        let mult = 1;
+        let jogando = false;
+
+        function comecarGameplay() {
+            if (!jogando) {
+                jogando = true;
+                document.getElementById("btnIniciar").style.display = "none";
+                canvas.focus();
+
+                setInterval(function() {
+                    let indicePista = Math.floor(Math.random() * 5);
+                    let config = botoesConfig[indicePista];
+
+                    notas.push({ 
+                        pista: indicePista,
+                        x: config.x, 
+                        y: -25, 
+                        velocidade: 5, 
+                        cor: config.corAtiva 
+                    });
+                }, 600);
+            }
+        }
+
+        window.addEventListener("keydown", function(e) { 
+            let teclaApertada = e.key.toLowerCase();
+            if (teclasPressionadas.hasOwnProperty(teclaApertada)) {
+                if (!teclasPressionadas[teclaApertada]) {
+                    verificarAcerto(teclaApertada);
+                }
+                teclasPressionadas[teclaApertada] = true;
+            }
+        });
+        
+        window.addEventListener("keyup", function(e) { 
+            let teclaSolta = e.key.toLowerCase();
+            if (teclasPressionadas.hasOwnProperty(teclaSolta)) {
+                teclasPressionadas[teclaSolta] = false; 
+            }
+        });
+
+        function atualizarPainel() {
+            document.getElementById("placar").innerText = "PONTOS: " + pontos;
+            document.getElementById("combo").innerText = "COMBO: " + comboAtual;
+            document.getElementById("multiplicador").innerText = "MULT: x" + mult;
+        }
+
+        // Corrigido para carregar na internet
+        function calcularMultiplicador() {
+            if (comboAtual >= 30) { mult = 4; } 
+            else if (comboAtual >= 20) { mult = 3; } 
+            else if (comboAtual >= 10) { mult = 2; } 
+            else { mult = 1; }
+        }
+
+        function criarFogo(posX) {
+            const coresFogo = ["#ff3300", "#ff6600", "#ffcc00", "#ffffff"];
+            for (let i = 0; i < 15; i++) {
+                particulasFogo.push({
+                    x: posX + (Math.random() - 0.5) * 30, y: 520,
+                    velX: (Math.random() - 0.5) * 2, velY: -Math.random() * 6 - 4,
+                    comprimento: Math.random() * 20 + 15, largura: Math.random() * 4 + 2,
+                    vidaMaxima: Math.random() * 15 + 10, vida: 1,
+                    cor: coresFogo[Math.floor(Math.random() * coresFogo.length)]
+                });
+            }
+        }
+
+        function verificarAcerto(teclaApertada) {
+            let acertouAlguma = false;
+            for (let i = 0; i < notas.length; i++) {
+                let nota = notas[i];
+                let configPista = botoesConfig[nota.pista];
+
+                if (configPista.tecla === teclaApertada) {
+                    if (nota.y >= 490 && nota.y <= 550) {
+                        comboAtual++;
+                        calcularMultiplicador();
+                        pontos += 10 * mult;
+                        criarFogo(nota.x);
+                        notas.splice(i, 1);
+                        acertouAlguma = true;
+                        break;
+                    }
+                }
+            }
+            if (!acertouAlguma) {
+                comboAtual = 0;
+                mult = 1;
+            }
+            atualizarPainel();
+        }
+
+        function desenharJogo() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "rgba(40, 40, 40, 0.85)";
+            ctx.fillRect(30, 0, 440, canvas.height); 
+
+            ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
+            for(let i = 1; i < 5; i++) {
+                ctx.beginPath(); ctx.moveTo(30 + (i * 88), 0); ctx.lineTo(30 + (i * 88), canvas.height); ctx.stroke();
+            }
+
+            botoesConfig.forEach(botao => {
+                if (teclasPressionadas[botao.tecla]) { ctx.fillStyle = botao.corAtiva; } 
+                else { ctx.fillStyle = botao.corNormal; }
+                ctx.beginPath(); ctx.arc(botao.x, 520, 25, 0, Math.PI * 2); ctx.fill();
+                ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+            });
+
+            for (let i = 0; i < notas.length; i++) {
+                let nota = notas[i];
+                if (jogando) nota.y += nota.velocidade;
+                
+                ctx.fillStyle = nota.cor;
+                ctx.beginPath(); ctx.arc(nota.x, nota.y, 20, 0, Math.PI * 2); ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+                
+                if (nota.y > canvas.height + 25) { 
+                    comboAtual = 0; mult = 1; atualizarPainel();
+                    notas.splice(i, 1); i--; 
+                }
+            }
+
+            for (let i = 0; i < particulasFogo.length; i++) {
+                let p = particulasFogo[i]; p.x += p.velX; p.y += p.velY; p.vida++;
+                let progresso = (p.vidaMaxima - p.vida) / p.vidaMaxima;
+                let larguraAtual = p.largura * progresso; let comprimentoAtual = p.comprimento * progresso;
+
+                if (larguraAtual > 0 && comprimentoAtual > 0) {
+                    ctx.strokeStyle = p.cor; ctx.lineWidth = larguraAtual; ctx.lineCap = "round";
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x, p.y + comprimentoAtual);
+                    ctx.stroke();
+                }
+                if (p.vida >= p.vidaMaxima) { particulasFogo.splice(i, 1); i--; }
+            }
+
+            requestAnimationFrame(desenharJogo);
+        }
+        desenharJogo();
+    </script>
+</body>
+</html>
 
