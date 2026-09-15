@@ -2,42 +2,35 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Guitar Flash Mod - Modo Clipe Oficial 🔥</title>
+    <title>Guitar Flash Mod - Versão Oficial 🔥</title>
     <style>
         body { background-color: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column; overflow: hidden; }
         #painel { display: flex; justify-content: space-between; width: 500px; font-family: Arial, sans-serif; font-size: 22px; font-weight: bold; margin-bottom: 10px; z-index: 10; }
         #placar { color: #00ff00; }
         #combo { color: #ffff00; }
         #multiplicador { color: #00ffff; }
-        
-        #containerJogo { position: relative; width: 500px; height: 600px; }
-        canvas { position: absolute; top: 0; left: 0; border: 4px solid #444; background-color: transparent; z-index: 5; }
-        #videoBackground { position: absolute; top: 4px; left: 4px; width: 492px; height: 592px; z-index: 1; }
-        
-        #btnIniciar { background-color: #ff8800; color: white; border: none; padding: 15px 30px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; font-family: Arial, sans-serif; z-index: 10; }
+        canvas { border: 4px solid #444; background-color: #222; z-index: 5; }
+        #btnIniciar { background-color: #ff8800; color: white; border: none; padding: 15px 35px; font-size: 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; font-family: Arial, sans-serif; z-index: 10; }
         #btnIniciar:hover { background-color: #ffaa00; }
     </style>
 </head>
 <body>
 
+    <!-- Painel de Informações -->
     <div id="painel">
         <div id="placar">PONTOS: 0</div>
         <div id="combo">COMBO: 0</div>
         <div id="multiplicador">MULT: x1</div>
     </div>
 
-    <div id="containerJogo">
-        <!-- ALTERADO PARA O LINK SEGURO DO YOUTUBE (youtube-nocookie) -->
-        <iframe id="videoBackground" 
-                src="https://youtube-nocookie.com" 
-                frameborder="0" 
-                allow="autoplay; encrypted-media" 
-                allowfullscreen>
-        </iframe>
-        <canvas id="telaJogo" width="500" height="600"></canvas>
-    </div>
+    <!-- Tela do Jogo -->
+    <canvas id="telaJogo" width="500" height="600"></canvas>
 
+    <!-- Botão de Iniciar (Necessário para liberar o som no navegador) -->
     <button id="btnIniciar" onclick="comecarGameplay()">COMEÇAR A JOGAR</button>
+
+    <!-- Sistema de Áudio Nativo via Link Direto -->
+    <audio id="musicaRock" src="https://soundhelix.com" preload="auto" crossorigin="anonymous"></audio>
 
     <script>
         window.onload = function() {
@@ -60,12 +53,19 @@
             let mult = 1;
             let jogando = false;
 
+            // Função que inicia a música e solta as notas na tela
             window.comecarGameplay = function() {
                 if (!jogando) {
                     jogando = true;
                     document.getElementById("btnIniciar").style.display = "none";
                     canvas.focus();
 
+                    // Toca a música diretamente pela web
+                    const som = document.getElementById("musicaRock");
+                    som.volume = 0.6; // Define o volume
+                    som.play().catch(e => console.log("Aguardando interação:", e));
+
+                    // Cria as notas caindo em um ritmo bem legal
                     setInterval(function() {
                         let indicePista = Math.floor(Math.random() * 5);
                         let config = botoesConfig[indicePista];
@@ -152,14 +152,17 @@
             function desenharJogo() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                ctx.fillStyle = "rgba(40, 40, 40, 0.85)";
+                // Desenha a pista de corrida cinza
+                ctx.fillStyle = "#333";
                 ctx.fillRect(30, 0, 440, canvas.height); 
 
-                ctx.strokeStyle = "#555"; ctx.lineWidth = 2;
+                // Linhas divisórias das cordas
+                ctx.strokeStyle = "#444"; ctx.lineWidth = 2;
                 for(let i = 1; i < 5; i++) {
                     ctx.beginPath(); ctx.moveTo(30 + (i * 88), 0); ctx.lineTo(30 + (i * 88), canvas.height); ctx.stroke();
                 }
 
+                // Desenha os 5 botões da guitarra na base
                 botoesConfig.forEach(botao => {
                     if (teclasPressionadas[botao.tecla]) { ctx.fillStyle = botao.corAtiva; } 
                     else { ctx.fillStyle = botao.corNormal; }
@@ -167,6 +170,7 @@
                     ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
                 });
 
+                // Move e desenha as notas musicais
                 for (let i = 0; i < notas.length; i++) {
                     let nota = notas[i];
                     if (jogando) nota.y += nota.velocidade;
@@ -181,6 +185,7 @@
                     }
                 }
 
+                // Desenha as labaredas de fogo do acerto
                 for (let i = 0; i < particulasFogo.length; i++) {
                     let p = particulasFogo[i]; p.x += p.velX; p.y += p.velY; p.vida++;
                     let progresso = (p.vidaMaxima - p.vida) / p.vidaMaxima;
